@@ -115,6 +115,32 @@ d <- mutate_each(f, funs(clean), px1, px2) %>%
 
 
 
+
+####################
+
+# correlograms
+cd <- f %>%
+  sample_n(100000) %>%
+  gather(metric, value, -px1, -px2, -geographic) %>%
+  mutate(rw=grepl("RW", metric))
+cats <- c("species", "clade", "phylo", "chrono", "clado")
+for(cat in cats) cd$cat[grepl(cat, cd$metric)] <- cat
+cd$cat <- factor(cd$cat, levels=cats)
+
+p <- ggplot(cd, aes(geographic, value, color=cat, linetype=rw)) +
+  geom_smooth(se=F) +
+  theme_minimal() +
+  scale_color_manual(values=c("black", "blue", "goldenrod1", "red", "limegreen")) +
+  scale_x_continuous(breaks=seq(0, 10000, 200)) +
+  labs(x="pairwise geographic distance (km)",
+       y="pairwise Sorenson's dissimilarity",
+       color="distance\nmetric",
+       linetype="range-\nweighted")
+ggsave("figures/correlograms.pdf", width=5, height=5, units="in")
+ggsave("figures/correlograms.png", width=5, height=5, units="in")
+
+
+
 #####################
 
 
