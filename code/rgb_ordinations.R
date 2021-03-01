@@ -12,33 +12,8 @@ library(tidyverse)
 select <- dplyr::select
 
 
-# utility functions
 
-loadm <- function(file, get="dist"){
-   r <- fread(file) %>%
-      as.data.frame()
-   if(get=="cells") return(r[,1])
-   r <- r[,2:ncol(r)]
-   r[is.na(r)] <- 0
-   as.matrix(r)
-}
-
-rank <- function(x)ecdf(x)(x)
-
-dst <- function(y){
-   y <- matrix(y, nrow=2, byrow=T)/255
-   y <- sqrt(sum((y[1,] - y[2,])^2))
-   y
-}
-
-diff <- function(x, target, fun = mean){
-   x <- cbind(x, target)
-   x <- apply(x, 1, dst)
-   fun(x)
-}
-
-
-
+source("code/functions.R")
 
 
 # phylo turnover matrices
@@ -71,14 +46,14 @@ schemes <- expand.grid(order=1:6, inversion=1:8) %>%
 target <- schemes[[7]]
 
 
-distance0 <- diff(target, target = target) # check that this is 0
-distance <- sapply(schemes, diff, target = target)
+distance0 <- difff(target, target = target) # check that this is 0
+distance <- sapply(schemes, difff, target = target)
 best <- which.min(distance)
 
 d$target <- rgb(schemes[[best]], maxColorValue=255)
 ddd <- select(d, x, y, target)
 
-
+saveRDS(ddd, "data/target_colors.rds")
 
 
 ### step 2: ordinate and color all 10 metrics
@@ -106,17 +81,20 @@ ord_rgb <- function(file, target_scheme){
    target <- t(col2rgb(od$target))
    schemes <- expand.grid(order=1:6, inversion=1:8) %>%
       split(1:48) %>%
-      lapply(function(x) colors3d(select(od, V1:V3), 
+      lapply(function(x) colors3d(select(od, V1:V3),
                                   order=x$order, inversion=x$inversion)) %>%
       lapply(col2rgb) %>%
       lapply(t)
-   distance <- sapply(schemes, diff, target = target, fun = mean)
+   distance <- sapply(schemes, difff, target = target, fun = mean)
    best <- which.min(distance)
    od$color <- rgb(schemes[[best]], maxColorValue=255)
    
    od$metric <- tag
    od %>% select(metric, x, y, color)
 }
+
+
+ddd <- readRDS("data/target_colors.rds")
 
 d <- map(files, ord_rgb, target_scheme = ddd)
 
